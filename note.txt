@@ -1,0 +1,75 @@
+CivicTrack is a community issue reporting
+and tracking platform that helps residents
+report local problems and follow their progress
+toward resolution.
+
+Imagine someone in your neighborhood discovers a damaged road.
+1. They open CivicTrack.
+2. They submit a report with a description, photo, and location.
+3. The report appears on the public issues page.
+4. An authorized administrator reviews it.
+5. The administrator updates its status as the issue progresses.
+6. Residents can see whether the issue has been resolved.
+That's the core product.
+
+Our initial target users: Residents and administrators managing reports for a local community.
+
+We won't build every possible feature immediately. We'll start with a manageable first version, or MVP (Minimum Viable Product).
+👤 Resident features
+- Register and log in.
+- Submit a new issue.
+- Upload an issue photo.
+- Specify the issue category and location.
+- Browse publicly available reports.
+- Search and filter issues.
+- View the status and history of a report.
+- View and manage their own reports.
+🛡️ Administrator features
+- Access a protected admin dashboard.
+- View and manage submitted reports.
+- Update issue statuses.
+- Assign issues to responsible people.
+- Review reported issues and possible duplicates.
+- View statistics about total, pending, and resolved reports.
+🌍 Public features
+Visitors should be able to explore community issues without creating an account.
+
+For the initial release, we'll use these report statuses:
+Status	Meaning
+Submitted	The issue has been reported.
+Under Review	An administrator is reviewing it.
+In Progress	Work to address the issue has started.
+Resolved	The issue has been addressed.
+Rejected	The report was reviewed but will not proceed.
+
+
+We'll also maintain a history of status changes so that users can understand
+how a report progressed.
+
+3. Our technology stack
+
+Here's the stack I recommend for our project.
+
+Technology		Purpose
+Next.js App Router		Pages, layouts, and server-side functionality
+TypeScript		Type safety throughout the application
+Tailwind CSS		Responsive UI
+MongoDB			Persistent data storage
+Mongoose			Database schemas and queries
+Authentication library		Secure login and session management
+Route Handlers		REST API endpoints
+Cloudinary		Issue photo storage
+Git and GitHub		Version control and collaboration
+Vercel			Deployment
+
+We'll choose specific library versions and authentication
+dependencies when we set up the project.
+
+Why this stack?
+Ia lready have experience with React, Express, MongoDB, and Mongoose.
+
+Now we'll build on that foundation and learn how Next.js
+ handles server-side functionality, routing, data access, and authentication.
+
+We won't abandon the backend concepts you've learned.
+ We'll understand how to apply them in a Next.js application.
