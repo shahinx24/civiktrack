@@ -1,8 +1,7 @@
-
 export default function Home() {
   return (
     <div>
-      day2
+      day3
     </div>
   );
 }
