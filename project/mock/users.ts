@@ -1,0 +1,63 @@
+import { User } from "@/types/user";
+
+export const MOCK_USERS: User[] = [
+  {
+    id: "usr-resident-01",
+    name: "Alex Morgan",
+    email: "alex.morgan@community.org",
+    role: "resident",
+    phone: "+1 (555) 234-5678",
+    ward: "Ward 4 - Riverside",
+    createdAt: "2025-01-15T08:30:00Z",
+  },
+  {
+    id: "usr-resident-02",
+    name: "Priya Sharma",
+    email: "priya.sharma@community.org",
+    role: "resident",
+    phone: "+1 (555) 345-6789",
+    ward: "Ward 2 - Highland Park",
+    createdAt: "2025-02-01T10:15:00Z",
+  },
+  {
+    id: "usr-authority-01",
+    name: "Marcus Vance",
+    email: "marcus.vance@civic.gov.local",
+    role: "authority",
+    phone: "+1 (555) 456-7890",
+    ward: "Central Municipal District",
+    createdAt: "2024-11-10T09:00:00Z",
+  },
+  {
+    id: "usr-officer-01",
+    name: "Elena Rostova",
+    email: "elena.rostova@pwi.gov.local",
+    role: "officer",
+    departmentId: "dept-pwi",
+    departmentName: "Public Works & Infrastructure",
+    phone: "+1 (555) 567-8901",
+    ward: "District West",
+    createdAt: "2024-12-05T11:20:00Z",
+  },
+  {
+    id: "usr-officer-02",
+    name: "David Kim",
+    email: "david.kim@wsa.gov.local",
+    role: "officer",
+    departmentId: "dept-wsa",
+    departmentName: "Water & Sewerage Authority",
+    phone: "+1 (555) 678-9012",
+    ward: "District East",
+    createdAt: "2024-12-10T14:45:00Z",
+  },
+  {
+    id: "usr-admin-01",
+    name: "Sarah Jenkins",
+    email: "sarah.jenkins@admin.gov.local",
+    role: "admin",
+    phone: "+1 (555) 789-0123",
+    ward: "Civic IT Headquarters",
+    createdAt: "2024-09-01T08:00:00Z",
+  },
+];
+
