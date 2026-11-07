@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f5f7fa;
+  --foreground: #1e293b;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1e293b;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #0f172a;
+  --popover-foreground: #1e293b;
+  --primary: #168f85;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
+  --secondary: #e5f6ef;
+  --secondary-foreground: #168f85;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --accent: #0d9488;
+  --accent: #168f85;
   --accent-foreground: #ffffff;
-  --accent-light: #f0fdfa;
-  --destructive: #ef4444;
+  --accent-light: #e5f6ef;
+  --navy: #173b57;
+  --blue-accent: #3478f6;
+  --soft-mint: #e5f6ef;
+  --destructive: #dc4545;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #0d9488;
+  --ring: #168f85;
   --radius: 0.5rem;
 }
 
@@ -40,6 +43,12 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-light: var(--accent-light);
+  --color-brand-teal: #168f85;
+  --color-brand-teal-hover: #12776f;
+  --color-brand-navy: #173b57;
+  --color-brand-blue: #3478f6;
+  --color-brand-mint: #e5f6ef;
+  --color-brand-bg: #f5f7fa;
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
