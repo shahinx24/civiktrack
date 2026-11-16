@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 
-// Verify JWT authentication
 const protect = async (req, res, next) => {
   try {
     // Get token from Authorization header
