@@ -7,7 +7,10 @@ const {
 } = require("../controllers/adminDashboardController");
 
 // Import Authentication Middleware
-const { protect, authorizeAdmin } = require("../middleware/authMiddleware");
+const {
+  protect,
+  authorizeAdmin,
+} = require("../middleware/authMiddleware");
 
 // Admin Dashboard Statistics Route
 router.get(
