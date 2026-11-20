@@ -15,9 +15,9 @@ const seedAdmin = async () => {
       throw new Error("Admin environment variables are missing");
     }
 
-    // Find the old Admin account
+    // Find the Admin account
     const existingAdmin = await Admin.findOne({
-      email: "admin@civictrack.in",
+      email: ADMIN_EMAIL.toLowerCase(),
     });
 
     if (existingAdmin) {

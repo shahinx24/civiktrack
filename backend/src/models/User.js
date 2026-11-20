@@ -7,44 +7,25 @@ const officialDetailsSchema = new mongoose.Schema(
     designation: {
       type: String,
       trim: true,
+      maxlength: 100,
     },
 
-    department: {
-      type: String,
-      trim: true,
-    },
-
-    constituencyId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Constituency",
-    },
-
-    localBodyId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "LocalBody",
-    },
-
-    assignedAreaIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Area",
-      },
-    ],
-
-    handledCategoryIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",
-      },
-    ],
-
+    // Approval information
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      refPath: "officialDetails.approvedByModel",
+      default: null,
+    },
+
+    approvedByModel: {
+      type: String,
+      enum: ["Admin", "User"],
+      default: null,
     },
 
     approvedAt: {
       type: Date,
+      default: null,
     },
   },
   {
@@ -55,7 +36,7 @@ const officialDetailsSchema = new mongoose.Schema(
 // USER SCHEMA
 const userSchema = new mongoose.Schema(
   {
-    // Basic Information
+    // BASIC INFORMATION
     name: {
       type: String,
       required: true,
@@ -77,6 +58,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true,
+      set: (value) => {
+        if (typeof value !== "string") return value;
+        return value.trim() || undefined;
+      },
     },
 
     passwordHash: {
@@ -85,7 +70,7 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
-    // User Role
+    // USER ROLE
     role: {
       type: String,
       enum: ["resident", "authorized", "authorized_official"],
@@ -93,7 +78,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Account Status
+    // ACCOUNT STATUS
     accountStatus: {
       type: String,
       enum: ["pending", "active", "blocked", "suspended"],
@@ -111,7 +96,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Management Relationship
+    // MANAGEMENT RELATIONSHIP
     managedBy: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "managedByModel",
@@ -124,13 +109,13 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Official Information
+    // MLA / RESPONSIBLE PERSON DETAILS
     officialDetails: {
       type: officialDetailsSchema,
       default: undefined,
     },
 
-    // Blacklist Management
+    // BLACKLIST MANAGEMENT
     isBlacklisted: {
       type: Boolean,
       default: false,
@@ -139,18 +124,27 @@ const userSchema = new mongoose.Schema(
     blacklistReason: {
       type: String,
       trim: true,
+      maxlength: 500,
     },
 
     blacklistedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      refPath: "blacklistedByModel",
+      default: null,
+    },
+
+    blacklistedByModel: {
+      type: String,
+      enum: ["User", "Admin"],
+      default: null,
     },
 
     blacklistedAt: {
       type: Date,
+      default: null,
     },
 
-    // Soft Deletion
+    // SOFT DELETION
     deletedAt: {
       type: Date,
       default: null,
@@ -158,12 +152,20 @@ const userSchema = new mongoose.Schema(
 
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      refPath: "deletedByModel",
+      default: null,
+    },
+
+    deletedByModel: {
+      type: String,
+      enum: ["User", "Admin"],
+      default: null,
     },
 
     deletionReason: {
       type: String,
       trim: true,
+      maxlength: 500,
     },
   },
   {
@@ -171,7 +173,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Set manager model according to user role
+// VALIDATE MANAGEMENT RELATIONSHIP
 userSchema.pre("validate", function () {
   if (!this.managedBy) {
     this.managedByModel = null;
@@ -185,7 +187,26 @@ userSchema.pre("validate", function () {
   }
 });
 
-// PASSWORD HASHING
+// VALIDATE BLACKLIST INFORMATION
+userSchema.pre("validate", function () {
+  if (!this.isBlacklisted) {
+    this.blacklistReason = undefined;
+    this.blacklistedBy = null;
+    this.blacklistedByModel = null;
+    this.blacklistedAt = null;
+  }
+});
+
+// VALIDATE SOFT DELETION INFORMATION
+userSchema.pre("validate", function () {
+  if (!this.deletedAt) {
+    this.deletedBy = null;
+    this.deletedByModel = null;
+    this.deletionReason = undefined;
+  }
+});
+
+// PASSWORD HASHING BEFORE SAVING
 userSchema.pre("save", async function () {
   if (!this.isModified("passwordHash")) return;
 
@@ -203,6 +224,8 @@ userSchema.index({ role: 1, accountStatus: 1 });
 userSchema.index({ isBlacklisted: 1, role: 1 });
 
 userSchema.index({ managedBy: 1, role: 1 });
+
+userSchema.index({ deletedAt: 1 });
 
 // EXPORT MODEL
 const User = mongoose.model("User", userSchema);
