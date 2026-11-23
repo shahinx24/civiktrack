@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 // OFFICIAL REQUEST SCHEMA
@@ -48,7 +49,7 @@ const officialRequestSchema = new mongoose.Schema(
       ref: "LocalBody",
     },
 
-    // Requested constituency (MLA)
+    // Requested constituency
     constituencyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Constituency",
@@ -98,10 +99,17 @@ const officialRequestSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Admin or authorized reviewer who handled the request
+    // Admin or Authorized Official who reviewed the request
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      refPath: "reviewedByModel",
+      default: null,
+    },
+
+    // Determines which collection contains the reviewer
+    reviewedByModel: {
+      type: String,
+      enum: ["Admin", "User"],
       default: null,
     },
 
@@ -122,6 +130,20 @@ const officialRequestSchema = new mongoose.Schema(
   }
 );
 
+// SET REVIEWER MODEL ACCORDING TO REQUESTED ROLE
+officialRequestSchema.pre("validate", function () {
+  if (!this.reviewedBy) {
+    this.reviewedByModel = null;
+    return;
+  }
+
+  if (this.requestedRole === "authorized_official") {
+    this.reviewedByModel = "Admin";
+  } else if (this.requestedRole === "authorized") {
+    this.reviewedByModel = "User";
+  }
+});
+
 // DATABASE INDEXES
 
 // Find requests submitted by a user and their status
@@ -130,7 +152,7 @@ officialRequestSchema.index({
   status: 1,
 });
 
-// Find requests reviewed by an admin and their status
+// Find requests reviewed by an admin or official
 officialRequestSchema.index({
   reviewedBy: 1,
   status: 1,

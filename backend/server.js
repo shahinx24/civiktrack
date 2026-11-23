@@ -5,6 +5,7 @@ require("dotenv").config();
 const connectDB = require("./src/config/db");
 const adminRoutes = require("./src/routes/adminRoutes");
 const adminDashboardRoutes = require("./src/routes/adminDashboardRoutes");
+const adminOfficialRoutes = require("./src/routes/adminOfficialRoutes");
 
 const app = express();
 
@@ -21,6 +22,9 @@ app.use("/api/admin", adminRoutes);
 
 // Admin Dashboard Routes
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+
+// Admin Official Routes
+app.use("/api/admin/officials", adminOfficialRoutes);
 
 // Health Check
 app.get("/", (req, res) => {

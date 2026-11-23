@@ -21,8 +21,14 @@ const issueAssignmentSchema = new mongoose.Schema(
     // Admin or official who made the assignment
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      refPath: "assignedByModel",
+      default: null,
+    },
+
+    assignedByModel: {
+      type: String,
+      enum: ["Admin", "User"],
+      default: null,
     },
 
     // Current assignment status

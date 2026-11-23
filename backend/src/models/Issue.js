@@ -117,7 +117,13 @@ const issueSchema = new mongoose.Schema(
     // Admin or official who assigned the issue
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      refPath: "assignedByModel",
+      default: null,
+    },
+
+    assignedByModel: {
+      type: String,
+      enum: ["Admin", "User"],
       default: null,
     },
 

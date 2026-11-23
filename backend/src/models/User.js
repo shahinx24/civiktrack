@@ -40,7 +40,7 @@ const officialDetailsSchema = new mongoose.Schema(
 
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Admin",
     },
 
     approvedAt: {
@@ -111,6 +111,19 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Management Relationship
+    managedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "managedByModel",
+      default: null,
+    },
+
+    managedByModel: {
+      type: String,
+      enum: ["User", "Admin"],
+      default: null,
+    },
+
     // Official Information
     officialDetails: {
       type: officialDetailsSchema,
@@ -158,6 +171,20 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Set manager model according to user role
+userSchema.pre("validate", function () {
+  if (!this.managedBy) {
+    this.managedByModel = null;
+    return;
+  }
+
+  if (this.role === "authorized_official") {
+    this.managedByModel = "Admin";
+  } else {
+    this.managedByModel = "User";
+  }
+});
+
 // PASSWORD HASHING
 userSchema.pre("save", async function () {
   if (!this.isModified("passwordHash")) return;
@@ -174,6 +201,8 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 userSchema.index({ role: 1, accountStatus: 1 });
 
 userSchema.index({ isBlacklisted: 1, role: 1 });
+
+userSchema.index({ managedBy: 1, role: 1 });
 
 // EXPORT MODEL
 const User = mongoose.model("User", userSchema);
