@@ -2,38 +2,101 @@ const User = require("../models/User");
 const OfficialRequest = require("../models/OfficialRequest");
 const Issue = require("../models/Issue");
 
-// Get Admin Dashboard Statistics
+// GET ADMIN DASHBOARD STATISTICS
 const getAdminDashboardStats = async (req, res) => {
   try {
-    // Get total registered users (excluding deleted users)
-    const totalUsers = await User.countDocuments({
+    // USER STATISTICS
+    const activeUsersFilter = {
       deletedAt: null,
-    });
+    };
 
-    // Get total complaints
-    const totalIssues = await Issue.countDocuments();
+    const [
+      totalUsers,
+      totalResidents,
+      totalAuthorizedPersons,
+      totalAuthorizedOfficials,
+      blacklistedUsers,
+    ] = await Promise.all([
+      User.countDocuments(activeUsersFilter),
 
-    // Get pending complaints (all issues not resolved or rejected)
-    const pendingIssues = await Issue.countDocuments({
-      status: {
-        $nin: ["resolved", "rejected"],
-      },
-    });
+      User.countDocuments({
+        ...activeUsersFilter,
+        role: "resident",
+      }),
 
-    // Get resolved complaints
-    const resolvedIssues = await Issue.countDocuments({
-      status: "resolved",
-    });
+      User.countDocuments({
+        ...activeUsersFilter,
+        role: "authorized",
+      }),
 
-    // Get total official registration requests
-    const totalOfficialRequests = await OfficialRequest.countDocuments();
+      User.countDocuments({
+        ...activeUsersFilter,
+        role: "authorized_official",
+      }),
 
-    // Get pending official registration requests
-    const pendingOfficialRequests = await OfficialRequest.countDocuments({
-      status: "pending",
-    });
+      User.countDocuments({
+        ...activeUsersFilter,
+        isBlacklisted: true,
+      }),
+    ]);
 
-    // Get complaint statistics grouped by status
+    // ISSUE STATISTICS
+    const [
+      totalIssues,
+      pendingIssues,
+      resolvedIssues,
+      rejectedIssues,
+      expiredIssues,
+      reopenedIssues,
+    ] = await Promise.all([
+      Issue.countDocuments(),
+
+      Issue.countDocuments({
+        status: {
+          $nin: ["resolved", "rejected", "expired"],
+        },
+      }),
+
+      Issue.countDocuments({
+        status: "resolved",
+      }),
+
+      Issue.countDocuments({
+        status: "rejected",
+      }),
+
+      Issue.countDocuments({
+        status: "expired",
+      }),
+
+      Issue.countDocuments({
+        status: "reopened",
+      }),
+    ]);
+
+    // OFFICIAL REQUEST STATISTICS
+    const [
+      totalOfficialRequests,
+      pendingOfficialRequests,
+      approvedOfficialRequests,
+      rejectedOfficialRequests,
+    ] = await Promise.all([
+      OfficialRequest.countDocuments(),
+
+      OfficialRequest.countDocuments({
+        status: "pending",
+      }),
+
+      OfficialRequest.countDocuments({
+        status: "approved",
+      }),
+
+      OfficialRequest.countDocuments({
+        status: "rejected",
+      }),
+    ]);
+
+    // ISSUE STATUS BREAKDOWN
     const issueStatistics = await Issue.aggregate([
       {
         $group: {
@@ -50,34 +113,49 @@ const getAdminDashboardStats = async (req, res) => {
       },
     ]);
 
-    // Send dashboard statistics
+    // RESPONSE
     return res.status(200).json({
       success: true,
       message: "Admin dashboard statistics fetched successfully",
 
       data: {
-        totalUsers,
-        totalIssues,
-        pendingIssues,
-        resolvedIssues,
-        totalOfficialRequests,
-        pendingOfficialRequests,
-        issueStatistics,
+        users: {
+          total: totalUsers,
+          residents: totalResidents,
+          authorizedPersons: totalAuthorizedPersons,
+          authorizedOfficials: totalAuthorizedOfficials,
+          blacklisted: blacklistedUsers,
+        },
+
+        issues: {
+          total: totalIssues,
+          pending: pendingIssues,
+          resolved: resolvedIssues,
+          rejected: rejectedIssues,
+          expired: expiredIssues,
+          reopened: reopenedIssues,
+          statistics: issueStatistics,
+        },
+
+        officialRequests: {
+          total: totalOfficialRequests,
+          pending: pendingOfficialRequests,
+          approved: approvedOfficialRequests,
+          rejected: rejectedOfficialRequests,
+        },
       },
     });
   } catch (error) {
-    // Handle dashboard errors
     console.error("Admin Dashboard Error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Failed to fetch admin dashboard statistics",
-      error: error.message,
     });
   }
 };
 
-// Export Admin Dashboard Controller
+// EXPORT
 module.exports = {
   getAdminDashboardStats,
 };

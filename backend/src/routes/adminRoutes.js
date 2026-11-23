@@ -1,4 +1,3 @@
-
 const express = require("express");
 
 const { adminLogin } = require("../controllers/adminController");
@@ -10,10 +9,10 @@ const {
 
 const router = express.Router();
 
-// Admin login (Public route)
+// Admin Login (Public)
 router.post("/login", adminLogin);
 
-// Verify Admin authentication (Protected route)
+// Verify Admin Authentication (Protected)
 router.get("/verify", protect, authorizeAdmin, (req, res) => {
   res.status(200).json({
     success: true,
@@ -21,6 +20,7 @@ router.get("/verify", protect, authorizeAdmin, (req, res) => {
     admin: {
       id: req.user._id,
       name: req.user.name,
+      email: req.user.email,
       role: req.user.role,
     },
   });

@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 // ISSUE UPDATE SCHEMA
-
 const issueUpdateSchema = new mongoose.Schema(
   {
     // Issue related to this update
@@ -11,10 +10,36 @@ const issueUpdateSchema = new mongoose.Schema(
       required: true,
     },
 
-    // User or official who created this update
+    // User or admin who created this update
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      refPath: "updatedByModel",
+      required: true,
+    },
+
+    // Collection containing the person who created the update
+    updatedByModel: {
+      type: String,
+      enum: ["User", "Admin"],
+      required: true,
+    },
+
+    // Type of update
+    updateType: {
+      type: String,
+      enum: [
+        "status_change",
+        "inspection",
+        "work_started",
+        "progress",
+        "delay",
+        "resolution",
+        "rejection",
+        "expiry",
+        "reopening",
+        "general",
+      ],
+      default: "general",
       required: true,
     },
 
@@ -24,14 +49,15 @@ const issueUpdateSchema = new mongoose.Schema(
       enum: [
         "submitted",
         "under_review",
-        "assigned",
         "under_inspection",
         "in_progress",
         "awaiting_resources",
         "resolved",
         "rejected",
+        "expired",
+        "reopened",
       ],
-      required: true,
+      default: null,
     },
 
     // Description of the progress update
@@ -82,7 +108,7 @@ const issueUpdateSchema = new mongoose.Schema(
 
 // DATABASE INDEXES
 
-// Retrieve all updates for an issue in chronological order
+// Retrieve all updates for an issue chronologically
 issueUpdateSchema.index({
   issueId: 1,
   createdAt: 1,
@@ -94,8 +120,13 @@ issueUpdateSchema.index({
   createdAt: -1,
 });
 
-// EXPORT MODEL
+// Filter updates by type
+issueUpdateSchema.index({
+  updateType: 1,
+  createdAt: -1,
+});
 
+// EXPORT MODEL
 const IssueUpdate = mongoose.model(
   "IssueUpdate",
   issueUpdateSchema

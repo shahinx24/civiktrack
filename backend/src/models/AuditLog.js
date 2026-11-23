@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 // AUDIT LOG SCHEMA
-
 const auditLogSchema = new mongoose.Schema(
   {
     // User or admin who performed the action
@@ -22,28 +21,48 @@ const auditLogSchema = new mongoose.Schema(
     action: {
       type: String,
       enum: [
+        // User activities
         "user_registered",
         "user_updated",
         "user_blocked",
         "user_unblocked",
         "user_deleted",
+
+        // Official request activities
         "official_request_submitted",
         "official_request_approved",
         "official_request_rejected",
+
+        // Issue activities
         "issue_submitted",
-        "issue_assigned",
-        "issue_reassigned",
+        "issue_routed",
         "issue_status_changed",
         "issue_resolved",
         "issue_rejected",
+        "issue_expired",
+        "issue_reopened",
+
+        // Responsibility activities
+        "responsibility_created",
+        "responsibility_updated",
+        "responsibility_deactivated",
+
+        // Performance and accountability
+        "performance_record_created",
+        "official_blacklisted",
+        "official_unblacklisted",
+
+        // Administrative activities
         "admin_login",
         "admin_logout",
+
+        // General activity
         "general",
       ],
       required: true,
     },
 
-    // Related database record, if applicable
+    // Related database record
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
@@ -57,9 +76,12 @@ const auditLogSchema = new mongoose.Schema(
         "Admin",
         "OfficialRequest",
         "Issue",
-        "IssueAssignment",
         "IssueUpdate",
         "Notification",
+        "Responsibility",
+        "PerformanceRecord",
+        "Department",
+        "Category",
       ],
       default: null,
     },
@@ -122,7 +144,6 @@ auditLogSchema.index({
 });
 
 // EXPORT MODEL
-
 const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 
 module.exports = AuditLog;

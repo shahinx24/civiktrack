@@ -1,5 +1,29 @@
-
 const mongoose = require("mongoose");
+
+// SUPPORTING DOCUMENT SCHEMA
+const documentSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+
+    url: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+
+    publicId: {
+      type: String,
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  }
+);
 
 // OFFICIAL REQUEST SCHEMA
 const officialRequestSchema = new mongoose.Schema(
@@ -35,24 +59,35 @@ const officialRequestSchema = new mongoose.Schema(
     designation: {
       type: String,
       trim: true,
+      maxlength: 100,
     },
 
-    // Department name
-    department: {
-      type: String,
-      trim: true,
-    },
-
-    // Requested local body
-    localBodyId: {
+    // Department requested by the applicant
+    departmentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "LocalBody",
+      ref: "Department",
+      default: null,
+    },
+
+    // Requested jurisdiction level
+    jurisdictionLevel: {
+      type: String,
+      enum: ["ward", "local_body", "constituency"],
+      default: null,
     },
 
     // Requested constituency
     constituencyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Constituency",
+      default: null,
+    },
+
+    // Requested local body
+    localBodyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "LocalBody",
+      default: null,
     },
 
     // Requested areas or wards
@@ -72,24 +107,10 @@ const officialRequestSchema = new mongoose.Schema(
     ],
 
     // Supporting documents
-    documents: [
-      {
-        type: {
-          type: String,
-          trim: true,
-        },
-
-        url: {
-          type: String,
-          trim: true,
-        },
-
-        publicId: {
-          type: String,
-          trim: true,
-        },
-      },
-    ],
+    documents: {
+      type: [documentSchema],
+      default: [],
+    },
 
     // Request approval status
     status: {
@@ -99,14 +120,14 @@ const officialRequestSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Admin or Authorized Official who reviewed the request
+    // Admin or MLA who reviewed the request
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "reviewedByModel",
       default: null,
     },
 
-    // Determines which collection contains the reviewer
+    // Collection containing the reviewer
     reviewedByModel: {
       type: String,
       enum: ["Admin", "User"],
@@ -117,9 +138,10 @@ const officialRequestSchema = new mongoose.Schema(
     reviewReason: {
       type: String,
       trim: true,
+      maxlength: 500,
     },
 
-    // Date when request was reviewed
+    // Date when the request was reviewed
     reviewedAt: {
       type: Date,
       default: null,
@@ -130,8 +152,70 @@ const officialRequestSchema = new mongoose.Schema(
   }
 );
 
-// SET REVIEWER MODEL ACCORDING TO REQUESTED ROLE
+// VALIDATE REQUEST DETAILS
 officialRequestSchema.pre("validate", function () {
+  // MLA applications must specify a constituency
+  if (
+    this.requestedRole === "authorized_official" &&
+    !this.constituencyId
+  ) {
+    this.invalidate(
+      "constituencyId",
+      "A constituency is required for an authorized official request."
+    );
+  }
+
+  // Responsible-person applications must specify a department
+  if (this.requestedRole === "authorized") {
+    if (!this.departmentId) {
+      this.invalidate(
+        "departmentId",
+        "A department is required for an authorized person request."
+      );
+    }
+
+    if (!this.jurisdictionLevel) {
+      this.invalidate(
+        "jurisdictionLevel",
+        "A jurisdiction level is required."
+      );
+    }
+
+    // Ward-level responsibility
+    if (
+      this.jurisdictionLevel === "ward" &&
+      this.requestedAreaIds.length === 0
+    ) {
+      this.invalidate(
+        "requestedAreaIds",
+        "At least one area or ward is required."
+      );
+    }
+
+    // Local-body-level responsibility
+    if (
+      this.jurisdictionLevel === "local_body" &&
+      !this.localBodyId
+    ) {
+      this.invalidate(
+        "localBodyId",
+        "A local body is required."
+      );
+    }
+
+    // Constituency-level responsibility
+    if (
+      this.jurisdictionLevel === "constituency" &&
+      !this.constituencyId
+    ) {
+      this.invalidate(
+        "constituencyId",
+        "A constituency is required."
+      );
+    }
+  }
+
+  // Set reviewer collection according to the requested role
   if (!this.reviewedBy) {
     this.reviewedByModel = null;
     return;
@@ -146,9 +230,15 @@ officialRequestSchema.pre("validate", function () {
 
 // DATABASE INDEXES
 
-// Find requests submitted by a user and their status
+// Find requests submitted by a user
 officialRequestSchema.index({
   userId: 1,
+  status: 1,
+});
+
+// Find requests by requested role and status
+officialRequestSchema.index({
+  requestedRole: 1,
   status: 1,
 });
 

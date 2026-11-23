@@ -1,27 +1,38 @@
 const mongoose = require("mongoose");
 
-// NOTIFICATION SCHEMA
 const notificationSchema = new mongoose.Schema(
   {
-    // User who receives this notification
+    // User who receives the notification
     recipientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // Type of notification
+    // Notification type
     type: {
       type: String,
       enum: [
         "issue_submitted",
-        "issue_assigned",
+        "issue_routed",
         "issue_status_changed",
         "issue_resolved",
         "issue_rejected",
+        "issue_expired",
+        "issue_reopened",
+
         "official_request_submitted",
         "official_request_approved",
         "official_request_rejected",
+
+        "responsibility_created",
+        "responsibility_updated",
+        "responsibility_deactivated",
+
+        "official_blacklisted",
+        "official_unblacklisted",
+        "performance_warning",
+
         "general",
       ],
       required: true,
@@ -43,27 +54,34 @@ const notificationSchema = new mongoose.Schema(
       maxlength: 1000,
     },
 
-    // Related issue, if applicable
+    // Related issue
     issueId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Issue",
       default: null,
     },
 
-    // Related official request, if applicable
+    // Related official request
     officialRequestId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "OfficialRequest",
       default: null,
     },
 
-    // Whether the notification has been read
+    // Related responsibility
+    responsibilityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Responsibility",
+      default: null,
+    },
+
+    // Read status
     isRead: {
       type: Boolean,
       default: false,
     },
 
-    // Date when the notification was read
+    // Date notification was read
     readAt: {
       type: Date,
       default: null,
@@ -74,22 +92,18 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-// DATABASE INDEXES
-
-// Find notifications belonging to a particular user
+// Indexes
 notificationSchema.index({
   recipientId: 1,
   createdAt: -1,
 });
 
-// Find unread notifications for a user
 notificationSchema.index({
   recipientId: 1,
   isRead: 1,
 });
 
-// EXPORT MODEL
-
+// Export model
 const Notification = mongoose.model(
   "Notification",
   notificationSchema

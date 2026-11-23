@@ -10,7 +10,6 @@ const officialDetailsSchema = new mongoose.Schema(
       maxlength: 100,
     },
 
-    // Approval information
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "officialDetails.approvedByModel",
@@ -115,7 +114,7 @@ const userSchema = new mongoose.Schema(
       default: undefined,
     },
 
-    // BLACKLIST MANAGEMENT
+    // BLACKLIST STATUS
     isBlacklisted: {
       type: Boolean,
       default: false,
@@ -173,7 +172,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// VALIDATE MANAGEMENT RELATIONSHIP
+// MANAGEMENT REFERENCE VALIDATION
 userSchema.pre("validate", function () {
   if (!this.managedBy) {
     this.managedByModel = null;
@@ -187,17 +186,11 @@ userSchema.pre("validate", function () {
   }
 });
 
-// VALIDATE BLACKLIST INFORMATION
-userSchema.pre("validate", function () {
-  if (!this.isBlacklisted) {
-    this.blacklistReason = undefined;
-    this.blacklistedBy = null;
-    this.blacklistedByModel = null;
-    this.blacklistedAt = null;
-  }
-});
+// BLACKLIST METADATA IS PRESERVED
+// Do not clear historical blacklist information here.
+// Unblacklisting should be recorded through AuditLog / PerformanceRecord.
 
-// VALIDATE SOFT DELETION INFORMATION
+// SOFT DELETION VALIDATION
 userSchema.pre("validate", function () {
   if (!this.deletedAt) {
     this.deletedBy = null;
@@ -206,7 +199,7 @@ userSchema.pre("validate", function () {
   }
 });
 
-// PASSWORD HASHING BEFORE SAVING
+// PASSWORD HASHING
 userSchema.pre("save", async function () {
   if (!this.isModified("passwordHash")) return;
 
@@ -220,11 +213,8 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 
 // INDEXES
 userSchema.index({ role: 1, accountStatus: 1 });
-
 userSchema.index({ isBlacklisted: 1, role: 1 });
-
 userSchema.index({ managedBy: 1, role: 1 });
-
 userSchema.index({ deletedAt: 1 });
 
 // EXPORT MODEL

@@ -1,10 +1,21 @@
+
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 
-// Verify JWT authentication
+// VERIFY ADMIN AUTHENTICATION
 const protect = async (req, res, next) => {
   try {
-    // Get token from Authorization header
+    // Check JWT configuration
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error.",
+      });
+    }
+
+    // Get token
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -16,10 +27,25 @@ const protect = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    // Verify token
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication token.",
+      });
+    }
+
+    // Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find authenticated Admin
+    // Verify token role
+    if (decoded.role !== "admin" || !decoded.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required.",
+      });
+    }
+
+    // Find current Admin account
     const admin = await Admin.findById(decoded.id);
 
     if (!admin) {
@@ -29,6 +55,7 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // Check current account status
     if (!admin.isActive) {
       return res.status(403).json({
         success: false,
@@ -36,21 +63,35 @@ const protect = async (req, res, next) => {
       });
     }
 
-    // Attach Admin details to request
-    req.user = admin;
+    // Attach authenticated Admin information
+    req.user = {
+      _id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+    };
 
-    // Continue to next middleware/controller
-    next();
+    return next();
 
   } catch (error) {
-    return res.status(401).json({
+    if (error.name === "JsonWebTokenError" ||
+        error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired authentication token.",
+      });
+    }
+
+    console.error("Admin Authentication Error:", error);
+
+    return res.status(500).json({
       success: false,
-      message: "Invalid or expired authentication token.",
+      message: "Authentication failed.",
     });
   }
 };
 
-// Check Admin role
+// AUTHORIZE ADMIN ROLE
 const authorizeAdmin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     return next();
@@ -62,4 +103,8 @@ const authorizeAdmin = (req, res, next) => {
   });
 };
 
-module.exports = { protect, authorizeAdmin };
+// EXPORT MIDDLEWARE
+module.exports = {
+  protect,
+  authorizeAdmin,
+};

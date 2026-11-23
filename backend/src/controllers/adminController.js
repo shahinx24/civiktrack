@@ -1,26 +1,41 @@
 const Admin = require("../models/Admin");
 const jwt = require("jsonwebtoken");
 
-// Admin Login
+// ADMIN LOGIN
 const adminLogin = async (req, res) => {
   try {
-    // 1. Get credentials from request body
+    // 1. Get credentials
     const { email, password } = req.body;
 
     // 2. Validate input
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Valid email and password are required",
       });
     }
 
-    // 3. Find Admin and explicitly include password
+    // 3. Check JWT secret
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error",
+      });
+    }
+
+    // 4. Find Admin
     const admin = await Admin.findOne({
       email: email.trim().toLowerCase(),
     }).select("+password");
 
-    // 4. Check whether Admin exists
+    // 5. Check Admin existence
     if (!admin) {
       return res.status(401).json({
         success: false,
@@ -28,7 +43,7 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 5. Check account status
+    // 6. Check account status
     if (!admin.isActive) {
       return res.status(403).json({
         success: false,
@@ -36,7 +51,7 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 6. Compare entered password with stored hash
+    // 7. Compare password
     const isPasswordValid = await admin.comparePassword(password);
 
     if (!isPasswordValid) {
@@ -46,11 +61,11 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 7. Generate JWT token
+    // 8. Generate JWT
     const token = jwt.sign(
       {
-        id: admin._id,
-        role: admin.role,
+        id: admin._id.toString(),
+        role: "admin",
       },
       process.env.JWT_SECRET,
       {
@@ -58,7 +73,7 @@ const adminLogin = async (req, res) => {
       }
     );
 
-    // 8. Send successful response
+    // 9. Successful response
     return res.status(200).json({
       success: true,
       message: "Admin login successful",
@@ -70,7 +85,6 @@ const adminLogin = async (req, res) => {
         role: admin.role,
       },
     });
-
   } catch (error) {
     console.error("Admin Login Error:", error);
 

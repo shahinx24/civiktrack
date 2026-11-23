@@ -1,249 +1,342 @@
+
+const mongoose = require("mongoose");
+
 const OfficialRequest = require("../models/OfficialRequest");
 const User = require("../models/User");
+const Constituency = require("../models/Constituency");
 
-// GET ALL PENDING AUTHORIZED OFFICIAL REQUESTS
+// GET ALL PENDING MLA REQUESTS
 const getPendingOfficialRequests = async (req, res) => {
-    try {
-        const requests = await OfficialRequest.find({
-            requestedRole: "authorized_official",
-            status: "pending",
-        })
-            .populate("userId", "name email phone")
-            .populate("constituencyId", "name district")
-            .populate("localBodyId", "name type")
-            .populate("requestedAreaIds", "name wardNumber")
-            .populate("requestedCategoryIds", "name")
-            .sort({ createdAt: -1 });
+  try {
+    const requests = await OfficialRequest.find({
+      requestedRole: "authorized_official",
+      status: "pending",
+    })
+      .populate("userId", "name email phone")
+      .populate("constituencyId", "name district")
+      .populate("localBodyId", "name type")
+      .populate("requestedAreaIds", "name wardNumber")
+      .populate("requestedCategoryIds", "name")
+      .sort({ createdAt: -1 });
 
-        return res.status(200).json({
-            success: true,
-            count: requests.length,
-            requests,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch pending official requests.",
-            error: error.message,
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
+  } catch (error) {
+    console.error("Get Pending Official Requests Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pending official requests.",
+    });
+  }
 };
 
-// GET ALL AUTHORIZED OFFICIAL REQUESTS
+// GET ALL MLA REQUESTS
 const getAllOfficialRequests = async (req, res) => {
-    try {
-        const requests = await OfficialRequest.find({
-            requestedRole: "authorized_official",
-        })
-            .populate("userId", "name email phone")
-            .populate("constituencyId", "name district")
-            .populate("localBodyId", "name type")
-            .populate("requestedAreaIds", "name wardNumber")
-            .populate("requestedCategoryIds", "name")
-            .populate("reviewedBy", "name email")
-            .sort({ createdAt: -1 });
+  try {
+    const requests = await OfficialRequest.find({
+      requestedRole: "authorized_official",
+    })
+      .populate("userId", "name email phone")
+      .populate("constituencyId", "name district")
+      .populate("localBodyId", "name type")
+      .populate("requestedAreaIds", "name wardNumber")
+      .populate("requestedCategoryIds", "name")
+      .populate("reviewedBy", "name email")
+      .sort({ createdAt: -1 });
 
-        return res.status(200).json({
-            success: true,
-            count: requests.length,
-            requests,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch official requests.",
-            error: error.message,
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
+  } catch (error) {
+    console.error("Get All Official Requests Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch official requests.",
+    });
+  }
 };
 
-// GET SINGLE AUTHORIZED OFFICIAL REQUEST
+// GET SINGLE MLA REQUEST
 const getOfficialRequestById = async (req, res) => {
-    try {
-        const request = await OfficialRequest.findOne({
-            _id: req.params.id,
-            requestedRole: "authorized_official",
-        })
-            .populate("userId", "name email phone role accountStatus")
-            .populate("constituencyId", "name district")
-            .populate("localBodyId", "name type")
-            .populate("requestedAreaIds", "name wardNumber")
-            .populate("requestedCategoryIds", "name")
-            .populate("reviewedBy", "name email");
+  try {
+    const { id } = req.params;
 
-        if (!request) {
-            return res.status(404).json({
-                success: false,
-                message: "Official request not found.",
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            request,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch official request.",
-            error: error.message,
-        });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request ID.",
+      });
     }
+
+    const request = await OfficialRequest.findOne({
+      _id: id,
+      requestedRole: "authorized_official",
+    })
+      .populate("userId", "name email phone role accountStatus")
+      .populate("constituencyId", "name district")
+      .populate("localBodyId", "name type")
+      .populate("requestedAreaIds", "name wardNumber")
+      .populate("requestedCategoryIds", "name")
+      .populate("reviewedBy", "name email");
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Official request not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      request,
+    });
+  } catch (error) {
+    console.error("Get Official Request Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch official request.",
+    });
+  }
 };
 
-// APPROVE AUTHORIZED OFFICIAL REGISTRATION
+// APPROVE MLA REGISTRATION
 const approveOfficialRequest = async (req, res) => {
-    try {
-        const { id } = req.params;
+  let session;
 
-        const request = await OfficialRequest.findOne({
-            _id: id,
-            requestedRole: "authorized_official",
-        });
+  try {
+    const { id } = req.params;
+    const reviewReason =
+      typeof req.body.reviewReason === "string"
+        ? req.body.reviewReason.trim()
+        : "Approved by Admin";
 
-        if (!request) {
-            return res.status(404).json({
-                success: false,
-                message: "Official request not found.",
-            });
-        }
-
-        if (request.status !== "pending") {
-            return res.status(400).json({
-                success: false,
-                message: "This request has already been reviewed.",
-            });
-        }
-
-        // This approval handler currently supports registration requests.
-        if (request.requestType !== "registration") {
-            return res.status(400).json({
-                success: false,
-                message: "This request type is not supported by this approval handler.",
-            });
-        }
-
-        // Find the user who submitted the request
-        const user = await User.findById(request.userId);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "Requesting user not found.",
-            });
-        }
-
-        if (user.deletedAt || user.isBlacklisted) {
-            return res.status(400).json({
-                success: false,
-                message: "This user cannot be approved.",
-            });
-        }
-
-        // Update user role and official details
-        user.role = "authorized_official";
-        user.accountStatus = "active";
-
-        user.officialDetails = {
-            designation: request.designation,
-            department: request.department,
-            constituencyId: request.constituencyId,
-            localBodyId: request.localBodyId,
-            assignedAreaIds: request.requestedAreaIds,
-            handledCategoryIds: request.requestedCategoryIds,
-
-            // Record Admin who approved the official
-            approvedBy: req.user._id,
-            approvedAt: new Date(),
-        };
-
-        // Admin manages authorized officials
-        user.managedBy = req.user._id;
-        user.managedByModel = "Admin";
-
-        await user.save();
-
-        // Update the official request
-        request.status = "approved";
-        request.reviewedBy = req.user._id;
-        request.reviewReason = req.body.reviewReason || "Approved by Admin";
-        request.reviewedAt = new Date();
-
-        await request.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Authorized official approved successfully.",
-            request,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Failed to approve official request.",
-            error: error.message,
-        });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request ID.",
+      });
     }
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required.",
+      });
+    }
+
+    session = await mongoose.startSession();
+
+    let approvedRequest;
+
+    await session.withTransaction(async () => {
+      // Find pending MLA registration request
+      const request = await OfficialRequest.findOne({
+        _id: id,
+        requestedRole: "authorized_official",
+        status: "pending",
+        requestType: "registration",
+      }).session(session);
+
+      if (!request) {
+        const error = new Error(
+          "Pending MLA registration request not found."
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Find requesting user
+      const user = await User.findById(request.userId).session(session);
+
+      if (!user) {
+        const error = new Error("Requesting user not found.");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (
+        user.deletedAt ||
+        user.isBlacklisted ||
+        user.accountStatus === "blocked" ||
+        user.accountStatus === "suspended"
+      ) {
+        const error = new Error(
+          "This user cannot be approved."
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (user.role !== "resident") {
+        const error = new Error(
+          "Only a resident account can be approved for this registration."
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Find requested constituency
+      const constituency = await Constituency.findById(
+        request.constituencyId
+      ).session(session);
+
+      if (!constituency) {
+        const error = new Error(
+          "Requested constituency not found."
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Ensure only one MLA per constituency
+      if (
+        constituency.mla &&
+        constituency.mla.toString() !== user._id.toString()
+      ) {
+        const error = new Error(
+          "This constituency already has an assigned MLA."
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      // Update user role
+      user.role = "authorized_official";
+      user.accountStatus = "active";
+
+      // Save only fields supported by User.js
+      user.officialDetails = {
+        designation: request.designation,
+        approvedBy: req.user._id,
+        approvedByModel: "Admin",
+        approvedAt: new Date(),
+      };
+
+      // Admin manages MLA
+      user.managedBy = req.user._id;
+      user.managedByModel = "Admin";
+
+      await user.save({ session });
+
+      // Connect MLA to constituency
+      constituency.mla = user._id;
+
+      await constituency.save({ session });
+
+      // Update official request
+      request.status = "approved";
+      request.reviewedBy = req.user._id;
+      request.reviewedByModel = "Admin";
+      request.reviewReason = reviewReason;
+      request.reviewedAt = new Date();
+
+      await request.save({ session });
+
+      approvedRequest = request;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "MLA approved successfully.",
+      request: approvedRequest,
+    });
+  } catch (error) {
+    console.error("Approve Official Request Error:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message:
+        error.statusCode
+          ? error.message
+          : "Failed to approve official request.",
+    });
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+  }
 };
 
-// REJECT AUTHORIZED OFFICIAL REGISTRATION
+// REJECT MLA REGISTRATION
 const rejectOfficialRequest = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { reviewReason } = req.body;
+  try {
+    const { id } = req.params;
+    const { reviewReason } = req.body;
 
-        if (!reviewReason || !reviewReason.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide a reason for rejection.",
-            });
-        }
-
-        const request = await OfficialRequest.findOne({
-            _id: id,
-            requestedRole: "authorized_official",
-        });
-
-        if (!request) {
-            return res.status(404).json({
-                success: false,
-                message: "Official request not found.",
-            });
-        }
-
-        if (request.status !== "pending") {
-            return res.status(400).json({
-                success: false,
-                message: "This request has already been reviewed.",
-            });
-        }
-
-        // Update request status
-        request.status = "rejected";
-        request.reviewedBy = req.user._id;
-        request.reviewReason = reviewReason.trim();
-        request.reviewedAt = new Date();
-
-        await request.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Official request rejected successfully.",
-            request,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Failed to reject official request.",
-            error: error.message,
-        });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request ID.",
+      });
     }
+
+    if (
+      typeof reviewReason !== "string" ||
+      !reviewReason.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a reason for rejection.",
+      });
+    }
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required.",
+      });
+    }
+
+    const request = await OfficialRequest.findOne({
+      _id: id,
+      requestedRole: "authorized_official",
+      status: "pending",
+      requestType: "registration",
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Pending MLA registration request not found.",
+      });
+    }
+
+    request.status = "rejected";
+    request.reviewedBy = req.user._id;
+    request.reviewedByModel = "Admin";
+    request.reviewReason = reviewReason.trim();
+    request.reviewedAt = new Date();
+
+    await request.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "MLA registration request rejected successfully.",
+      request,
+    });
+  } catch (error) {
+    console.error("Reject Official Request Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reject official request.",
+    });
+  }
 };
 
-// EXPORT CONTROLLERS
+// EXPORT
 module.exports = {
-    getPendingOfficialRequests,
-    getAllOfficialRequests,
-    getOfficialRequestById,
-    approveOfficialRequest,
-    rejectOfficialRequest,
+  getPendingOfficialRequests,
+  getAllOfficialRequests,
+  getOfficialRequestById,
+  approveOfficialRequest,
+  rejectOfficialRequest,
 };

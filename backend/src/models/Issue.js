@@ -39,7 +39,20 @@ const issueSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Location information
+    // Department responsible for the issue
+    departmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      required: true,
+    },
+
+    // Complaint location
+    constituencyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Constituency",
+      required: true,
+    },
+
     localBodyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LocalBody",
@@ -90,41 +103,38 @@ const issueSchema = new mongoose.Schema(
       },
     ],
 
+    // Automatically identified responsibility records
+    responsibilityIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Responsibility",
+      },
+    ],
+
+    // Responsible persons who receive the complaint
+    responsiblePersonIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     // Current issue status
     status: {
       type: String,
       enum: [
         "submitted",
         "under_review",
-        "assigned",
         "under_inspection",
         "in_progress",
         "awaiting_resources",
         "resolved",
         "rejected",
+        "expired",
+        "reopened",
       ],
       default: "submitted",
       required: true,
-    },
-
-    // Official currently handling the issue
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    // Admin or official who assigned the issue
-    assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "assignedByModel",
-      default: null,
-    },
-
-    assignedByModel: {
-      type: String,
-      enum: ["Admin", "User"],
-      default: null,
     },
 
     // Rejection information
@@ -137,6 +147,7 @@ const issueSchema = new mongoose.Schema(
     rejectionReason: {
       type: String,
       trim: true,
+      maxlength: 500,
     },
 
     rejectedAt: {
@@ -164,7 +175,7 @@ const issueSchema = new mongoose.Schema(
       },
     ],
 
-    // Important issue dates
+    // Complaint dates
     submittedAt: {
       type: Date,
       default: Date.now,
@@ -175,9 +186,32 @@ const issueSchema = new mongoose.Schema(
       default: null,
     },
 
+    expiredAt: {
+      type: Date,
+      default: null,
+    },
+
     resolvedAt: {
       type: Date,
       default: null,
+    },
+
+    // MLA-authorized reopening information
+    reopenedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    reopenedAt: {
+      type: Date,
+      default: null,
+    },
+
+    reopenReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
     },
   },
   {
@@ -187,20 +221,41 @@ const issueSchema = new mongoose.Schema(
 
 // DATABASE INDEXES
 
-// Find issues reported by a particular resident
-issueSchema.index({ reportedBy: 1, status: 1 });
+// Find issues reported by a resident
+issueSchema.index({
+  reportedBy: 1,
+  status: 1,
+});
 
-// Find issues assigned to an official
-issueSchema.index({ assignedTo: 1, status: 1 });
+// Find complaints received by responsible persons
+issueSchema.index({
+  responsiblePersonIds: 1,
+  status: 1,
+});
 
-// Filter issues by location
-issueSchema.index({ localBodyId: 1, areaId: 1 });
+// Filter complaints by location
+issueSchema.index({
+  constituencyId: 1,
+  localBodyId: 1,
+  areaId: 1,
+});
 
-// Filter issues by category
-issueSchema.index({ categoryId: 1, status: 1 });
+// Filter complaints by department and status
+issueSchema.index({
+  departmentId: 1,
+  status: 1,
+});
 
-// Filter issues by submission date
-issueSchema.index({ submittedAt: -1 });
+// Find complaints approaching or passing their deadlines
+issueSchema.index({
+  status: 1,
+  dueDate: 1,
+});
+
+// Filter by submission date
+issueSchema.index({
+  submittedAt: -1,
+});
 
 // EXPORT MODEL
 const Issue = mongoose.model("Issue", issueSchema);

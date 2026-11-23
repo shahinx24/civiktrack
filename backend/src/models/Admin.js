@@ -3,10 +3,12 @@ const bcrypt = require("bcryptjs");
 
 const adminSchema = new mongoose.Schema(
   {
+    // BASIC INFORMATION
     name: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
 
     email: {
@@ -15,8 +17,10 @@ const adminSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      maxlength: 150,
     },
 
+    // PASSWORD
     password: {
       type: String,
       required: true,
@@ -24,12 +28,15 @@ const adminSchema = new mongoose.Schema(
       select: false,
     },
 
+    // ADMIN ROLE
     role: {
       type: String,
       enum: ["admin"],
       default: "admin",
+      required: true,
     },
 
+    // ACCOUNT STATUS
     isActive: {
       type: Boolean,
       default: true,
@@ -40,18 +47,19 @@ const adminSchema = new mongoose.Schema(
   }
 );
 
-// Hash password before saving
+// PASSWORD HASHING
 adminSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Compare entered password with hashed password
+// PASSWORD COMPARISON
 adminSchema.methods.comparePassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 
+// EXPORT MODEL
 const Admin = mongoose.model("Admin", adminSchema);
 
 module.exports = Admin;
